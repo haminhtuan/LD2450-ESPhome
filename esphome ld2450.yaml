@@ -4,7 +4,7 @@ esphome:
   name: ldesp2
   friendly_name: LDESP2
   includes:
-    - components/ld2450_uart.h
+    - custom_components/ld2450_uart.h
 
 
 # esp32:
