@@ -1,0 +1,193 @@
+
+# (1) Modifying esphome by adding components ld2450
+esphome:
+  name: ldesp2
+  friendly_name: LDESP2
+  includes:
+    - components/ld2450_uart.h
+
+
+# esp32:
+#  board: esp32dev
+#  framework:
+#    type: arduino
+
+# (2) Modifying logger by adding baud_rate = 0
+logger:
+  baud_rate: 0
+
+# Enable Home Assistant API
+#api:
+#  encryption:
+#    key: "   "
+
+# ota:
+#  password: "   "
+
+
+# wifi:
+#  ssid: !secret wifi_ssid
+#  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+#  ap:
+#    ssid: “”   
+#    password: " "
+
+
+
+# captive_portal:
+
+
+# (3) add following code for ld2450
+substitutions:
+  devicename: ld2450
+  upper_devicename: "Hi-Link LD2450"
+
+
+web_server:
+  port: 80
+
+uart:
+  id: uart_ld2450
+  tx_pin: TX
+  rx_pin: RX
+  baud_rate: 256000
+  parity: NONE
+  stop_bits: 1
+#  debug:
+#    direction: BOTH
+#    dummy_receiver: false
+
+custom_component:
+  - lambda: |-
+      return {new LD2450(id(uart_ld2450))};
+    components:
+      - id: ld2450
+
+binary_sensor:
+# You can add unlimited zone
+  - platform: template
+    name: "Presence Detected"
+    device_class: occupancy
+    lambda: |-
+      if (id(target1).state > 0 
+            or id(target2).state > 0
+            or id(target3).state > 0) {
+        return true;
+      } else {
+        return false;
+      }
+  - platform: template
+    name: "Zone 1"
+    device_class: occupancy
+    lambda: |-
+      float x1=-255;
+      float x2=60;
+      float y1=170;
+      float y2=345;
+      if ((id(target1x).state > x1 and id(target1x).state < x2 and id(target1y).state > y1 and id(target1y).state < y2)  
+            or (id(target2x).state > x1 and id(target2x).state < x2 and id(target2y).state > y1 and id(target2y).state < y2)
+            or (id(target3x).state > x1 and id(target3x).state < x2 and id(target3y).state > y1 and id(target3y).state < y2)) {
+        return true;
+      } else {
+        return false;
+      }
+  - platform: template
+    name: "Zone 2"
+    device_class: occupancy
+    lambda: |-
+      float xx1=-288;
+      float xx2=60;
+      float yy1=10;
+      float yy2=410;
+      if ((id(target1x).state > xx1 and id(target1x).state < xx2 and id(target1y).state > yy1 and id(target1y).state < yy2)  
+            or (id(target2x).state > xx1 and id(target2x).state < xx2 and id(target2y).state > yy1 and id(target2y).state < yy2)
+            or (id(target3x).state > xx1 and id(target3x).state < xx2 and id(target3y).state > yy1 and id(target3y).state < yy2)) {
+        return true;
+      } else {
+        return false;
+      }
+
+      
+sensor:
+  - platform: custom
+    lambda: |-
+      auto uart_component = static_cast<LD2450 *>(ld2450);
+      return {uart_component->target1Resolution, uart_component->target1Speed, uart_component->target1X, uart_component->target1Y,
+              uart_component->target2Resolution, uart_component->target2Speed, uart_component->target2X, uart_component->target2Y,
+              uart_component->target3Resolution, uart_component->target3Speed, uart_component->target3X, uart_component->target3Y,
+      };
+    sensors:
+      - name: "Target1 Resolution"
+        unit_of_measurement: "nm"
+        accuracy_decimals: 0
+        icon: mdi:artboard
+        id: target1
+      - name: "Target1 Speed"
+        unit_of_measurement: "cm/s"
+        accuracy_decimals: 0
+        icon: mdi:speedometer
+      - name: "Target1 X"
+        unit_of_measurement: "cm"
+        accuracy_decimals: 0
+        icon: mdi:map-marker-right
+        id: target1x
+      - name: "Target1 Y"
+        unit_of_measurement: "cm"
+        accuracy_decimals: 0
+        icon: mdi:map-marker-down
+        id: target1y
+      - name: "Target2 Resolution"
+        unit_of_measurement: "nm"
+        accuracy_decimals: 0
+        icon: mdi:artboard
+        id: target2
+      - name: "Target2 Speed"
+        unit_of_measurement: "cm/s"
+        accuracy_decimals: 0
+        icon: mdi:speedometer
+      - name: "Target2 X"
+        unit_of_measurement: "cm"
+        accuracy_decimals: 0
+        icon: mdi:map-marker-right
+        id: target2x
+      - name: "Target2 Y"
+        unit_of_measurement: "cm"
+        accuracy_decimals: 0
+        icon: mdi:map-marker-down
+        id: target2y
+      - name: "Target3 Resolution"
+        unit_of_measurement: "nm"
+        accuracy_decimals: 0
+        icon: mdi:artboard
+        id: target3
+      - name: "Target3 Speed"
+        unit_of_measurement: "cm/s"
+        accuracy_decimals: 0
+        icon: mdi:speedometer
+      - name: "Target3 X"
+        unit_of_measurement: "cm"
+        accuracy_decimals: 0
+        icon: mdi:map-marker-right
+        id: target3x
+      - name: "Target3 Y"
+        unit_of_measurement: "cm"
+        accuracy_decimals: 0
+        icon: mdi:map-marker-down
+        id: target3y
+  - platform: template
+    name: "Targets Detected"
+    update_interval: 1s
+    lambda: |-
+      int num = 0;
+      if (id(target1).state > 0) {
+        num += 1;
+      }
+      if (id(target2).state > 0) {
+        num += 1;
+      }
+      if (id(target3).state > 0) {
+        num += 1;
+      }
+      return num;
